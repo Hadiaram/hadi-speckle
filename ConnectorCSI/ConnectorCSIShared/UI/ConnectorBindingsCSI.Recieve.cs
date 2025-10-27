@@ -83,6 +83,32 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
     Base commitObject = await ConnectorHelpers.ReceiveCommit(commit, state, progress);
     await ConnectorHelpers.TryCommitReceived(state, commit, GetHostAppVersion(Model), progress.CancellationToken);
 
+    // 🔍 DIAGNOSTIC: Log the commit object structure
+    SpeckleLog.Logger.Information("🔍 Commit Object Type: {Type}", commitObject.GetType().FullName);
+    SpeckleLog.Logger.Information("🔍 Commit Object speckle_type: {SpeckleType}", commitObject.speckle_type);
+    SpeckleLog.Logger.Information("🔍 Commit Object properties: {Props}", string.Join(", ", commitObject.GetDynamicMembers()));
+
+    // Check for common properties
+    if (commitObject["elements"] != null)
+    {
+      var elements = commitObject["elements"];
+      SpeckleLog.Logger.Information("🔍 Found 'elements' property, type: {Type}", elements.GetType().FullName);
+
+      if (elements is System.Collections.IList list)
+      {
+        SpeckleLog.Logger.Information("🔍 Elements is a list with {Count} items", list.Count);
+        if (list.Count > 0)
+        {
+          var first = list[0];
+          if (first is Base firstBase)
+          {
+            SpeckleLog.Logger.Information("🔍 First element type: {Type}, speckle_type: {SpeckleType}",
+              firstBase.GetType().FullName, firstBase.speckle_type);
+          }
+        }
+      }
+    }
+
     Preview.Clear();
     StoredObjects.Clear();
 
