@@ -124,35 +124,70 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
 
   public bool CanConvertToNative(Base @object)
   {
-    Log.Information($"👁 Checking object type: {@object.speckle_type}");
+    // 🔍 DIAGNOSTIC: Log detailed type checking
+    SpeckleLog.Logger.Information("🔍 [CanConvertToNative] Checking object:");
+    SpeckleLog.Logger.Information("   Input speckle_type: {@SpeckleType}", @object.speckle_type);
+    SpeckleLog.Logger.Information("   Input .NET Type: {@DotNetType}", @object.GetType().FullName);
+    SpeckleLog.Logger.Information("   Input .NET Type assembly: {@Assembly}", @object.GetType().Assembly.FullName);
+
+    // Check each case
+    SpeckleLog.Logger.Information("   Is Element2D? {IsElement2D}", @object is Element2D);
+    SpeckleLog.Logger.Information("   Is Element1D? {IsElement1D}", @object is Element1D);
+    SpeckleLog.Logger.Information("   Is Node? {IsNode}", @object is Node);
+    SpeckleLog.Logger.Information("   Is GridLine? {IsGridLine}", @object is GridLine);
+    SpeckleLog.Logger.Information("   Is Load? {IsLoad}", @object is Load);
+    SpeckleLog.Logger.Information("   Is BuiltElements.Beam? {IsBeam}", @object is BuiltElements.Beam);
+    SpeckleLog.Logger.Information("   Is BuiltElements.Column? {IsColumn}", @object is BuiltElements.Column);
+    SpeckleLog.Logger.Information("   Is StructuralMaterial? {IsMaterial}", @object is StructuralMaterial);
+
     switch (@object)
     {
       case Element2D elem:
-        SpeckleLog.Logger
-  .ForContext<ConverterCSI>()
-  .Information($"🧱 Accepting Element2D: {elem.name}");
+        SpeckleLog.Logger.Information("   ✅ MATCHED Element2D case: {Name}", elem.name);
         return true;
 
       case CSIDiaphragm _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIDiaphragm case");
+        return true;
       case CSIStories _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIStories case");
+        return true;
       case Element1D _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Element1D case");
+        return true;
       case Load _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Load case");
+        return true;
       //case Geometry.Line line:
       case Node _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Node case");
+        return true;
       case GridLine _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED GridLine case");
+        return true;
       //case Model o:
       //case Property property:
 
       // for the moment we need to have this in here so the flatten traversal skips over this object
       // otherwise it would add result.element to the list twice and the stored objects dictionary would throw
       case Result _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Result case");
+        return true;
       case BuiltElements.Beam _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Beam case");
+        return true;
       case BuiltElements.Brace _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Brace case");
+        return true;
       case BuiltElements.Column _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Column case");
+        return true;
       case StructuralMaterial _:
+        SpeckleLog.Logger.Information("   ✅ MATCHED StructuralMaterial case");
         return true;
     }
-    ;
+
+    SpeckleLog.Logger.Warning("   ❌ NO MATCH - returning false");
     return false;
   }
 
@@ -180,32 +215,47 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
 
   public object ConvertToNative(Base @object)
   {
+    // 🔍 DIAGNOSTIC: Log conversion attempt
+    SpeckleLog.Logger.Information("🔍 [ConvertToNative] Starting conversion:");
+    SpeckleLog.Logger.Information("   Object speckle_type: {@SpeckleType}", @object.speckle_type);
+    SpeckleLog.Logger.Information("   Object .NET Type: {@DotNetType}", @object.GetType().FullName);
+    SpeckleLog.Logger.Information("   Object ID: {@Id}", @object.id);
+
     ApplicationObject appObj = new(@object.id, @object.speckle_type) { applicationId = @object.applicationId };
 
     List<string> convertedNames = new();
     string? convertedName = null;
 
+    SpeckleLog.Logger.Information("   Entering switch statement...");
+
     switch (@object)
     {
       case CSIAreaSpring o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIAreaSpring case");
         convertedName = AreaSpringPropertyToNative(o);
         break;
       case CSIDiaphragm o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIDiaphragm case");
         convertedName = DiaphragmToNative(o);
         break;
       case CSILinearSpring o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSILinearSpring case");
         convertedName = LinearSpringPropertyToNative(o);
         break;
       case CSILinkProperty o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSILinkProperty case");
         convertedName = LinkPropertyToNative(o);
         break;
       case CSIProperty2D o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIProperty2D case");
         convertedName = Property2DToNative(o);
         break;
       case CSISpringProperty o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSISpringProperty case");
         convertedName = SpringPropertyToNative(o);
         break;
       case CSIStories o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED CSIStories case");
         convertedNames = StoriesToNative(o);
         break;
       // case CSIWindLoadingFace o:
@@ -213,44 +263,60 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
       //   break;
       // case CSITendonProperty o:
       case OSG.Element1D o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Element1D case");
         FrameToNative(o, appObj);
         break;
       case OSG.Element2D o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Element2D case");
         AreaToNative(o, appObj);
         break;
       case LoadBeam o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED LoadBeam case");
         convertedNames = LoadFrameToNative(o, appObj.Log);
         break;
       case LoadFace o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED LoadFace case");
         convertedName = LoadFaceToNative(o, appObj.Log);
         break;
       case Geometry.Line o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Line case");
         convertedName = LineToNative(o); // do we really want to assume any line is a frame object?
         break;
       case OSG.Node o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Node case");
         convertedName = PointToNative(o, appObj.Log);
         break;
       case Property1D o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED Property1D case");
         convertedName = Property1DToNative(o);
         break;
       case StructuralMaterial o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED StructuralMaterial case");
         convertedName = MaterialToNative(o);
         break;
       case BuiltElements.Beam o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Beam case");
         CurveBasedElementToNative(o, o.baseLine, appObj);
         break;
       case BuiltElements.Brace o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Brace case");
         CurveBasedElementToNative(o, o.baseLine, appObj);
         break;
       case BuiltElements.Column o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED BuiltElements.Column case");
         CurveBasedElementToNative(o, o.baseLine, appObj);
         break;
       case GridLine o:
+        SpeckleLog.Logger.Information("   ✅ MATCHED GridLine case");
         GridLineToNative(o);
         break;
       default:
+        SpeckleLog.Logger.Error("   ❌ NO MATCH in switch - hitting default case!");
         throw new ConversionNotSupportedException($"{@object.GetType()} is an unsupported type");
     }
+
+    SpeckleLog.Logger.Information("   Switch completed. convertedName: {Name}, convertedNames count: {Count}",
+      convertedName ?? "null", convertedNames.Count);
 
     if (convertedName is not null)
     {
@@ -261,8 +327,17 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
     // FrameToNative and AreaToNative update appObj directly, so we don't want to overwrite their data
     if (convertedNames.Count > 0)
     {
+      SpeckleLog.Logger.Information("   Updating appObj with {Count} createdIds", convertedNames.Count);
       appObj.Update(createdIds: convertedNames);
     }
+    else
+    {
+      SpeckleLog.Logger.Information("   No convertedNames to add, skipping appObj.Update");
+    }
+
+    SpeckleLog.Logger.Information("   Final appObj.Status: {Status}", appObj.Status);
+    SpeckleLog.Logger.Information("   Final appObj.CreatedIds count: {Count}", appObj.CreatedIds?.Count ?? 0);
+    SpeckleLog.Logger.Information("   Final appObj.Converted count: {Count}", appObj.Converted?.Count ?? 0);
 
     return appObj;
   }
