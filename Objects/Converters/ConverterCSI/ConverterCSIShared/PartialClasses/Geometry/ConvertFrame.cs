@@ -76,7 +76,7 @@ public partial class ConverterCSI
 
     string guid = null;
     Model.FrameObj.GetGUID(name, ref guid);
-    appObj.Update(status: ApplicationObject.State.Updated, createdId: guid, convertedItem: $"Frame{Delimiter}{name}");
+    appObj.Update(status: ApplicationObject.State.Updated, createdIds: new List<string> { guid }, converted: new List<string> { $"Frame{Delimiter}{name}" });
   }
 
   public void FrameToNative(Element1D element1D, ApplicationObject appObj)
@@ -84,7 +84,7 @@ public partial class ConverterCSI
     if (element1D.type == ElementType1D.Link)
     {
       string createdName = LinkToNative((CSIElement1D)element1D, appObj.Log);
-      appObj.Update(status: ApplicationObject.State.Created, createdId: createdName);
+      appObj.Update(status: ApplicationObject.State.Created, createdIds: new List<string> { createdName }, converted: new List<string> { $"Link{Delimiter}{createdName}" });
       return;
     }
 
@@ -194,8 +194,8 @@ public partial class ConverterCSI
 
     appObj.Update(
       status: ApplicationObject.State.Created,
-      createdId: guid,
-      convertedItem: $"Frame{Delimiter}{newFrame}"
+      createdIds: new List<string> { guid },
+      converted: new List<string> { $"Frame{Delimiter}{newFrame}" }
     );
   }
 

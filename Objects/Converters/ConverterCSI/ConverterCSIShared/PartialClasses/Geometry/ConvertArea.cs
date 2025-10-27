@@ -188,7 +188,7 @@ public partial class ConverterCSI
     string guid = null;
     Model.AreaObj.GetGUID(name, ref guid);
 
-    appObj.Update(status: ApplicationObject.State.Updated, createdId: guid, convertedItem: $"Area{Delimiter}{name}");
+    appObj.Update(status: ApplicationObject.State.Updated, createdIds: new List<string> { guid }, converted: new List<string> { $"Area{Delimiter}{name}" });
 
     if (numErrorMsgs != 0)
     {
@@ -209,7 +209,16 @@ public partial class ConverterCSI
     {
       if (InjectOpeningIntoSlab(area, out string openingName))
       {
-        appObj.Update(status: ApplicationObject.State.Created, convertedItem: $"Opening{Delimiter}{openingName}", logItem: $"✅ Opening {openingName} created and flagged.");
+        string openingGuid = "";
+        if (!string.IsNullOrEmpty(area.applicationId))
+        {
+          openingGuid = area.applicationId;
+        }
+        else
+        {
+          Model.AreaObj.GetGUID(openingName, ref openingGuid);
+        }
+        appObj.Update(status: ApplicationObject.State.Created, createdIds: new List<string> { openingGuid }, converted: new List<string> { $"Opening{Delimiter}{openingName}" }, logItem: $"✅ Opening {openingName} created and flagged.");
       }
       else
       {
@@ -250,7 +259,7 @@ public partial class ConverterCSI
     var guid = "";
     Model.AreaObj.GetGUID(name, ref guid);
 
-    appObj.Update(status: ApplicationObject.State.Created, createdId: guid, convertedItem: $"Area{Delimiter}{name}");
+    appObj.Update(status: ApplicationObject.State.Created, createdIds: new List<string> { guid }, converted: new List<string> { $"Area{Delimiter}{name}" });
 
     SpeckleLog.Logger.Information($"[AreaToNative] 🔍 Received Element2D: {area.name}, applicationId: {area.applicationId}");
 

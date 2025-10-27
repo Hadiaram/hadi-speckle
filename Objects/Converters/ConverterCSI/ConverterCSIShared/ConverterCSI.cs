@@ -257,7 +257,12 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
       convertedNames.Add(convertedName);
     }
 
-    appObj.Update(createdIds: convertedNames);
+    // Only update createdIds if we have names to add
+    // FrameToNative and AreaToNative update appObj directly, so we don't want to overwrite their data
+    if (convertedNames.Count > 0)
+    {
+      appObj.Update(createdIds: convertedNames);
+    }
 
     return appObj;
   }
