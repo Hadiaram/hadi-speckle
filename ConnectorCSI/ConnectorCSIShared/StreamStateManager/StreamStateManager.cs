@@ -41,6 +41,12 @@ public static class StreamStateManager
       GetOrCreateSpeckleFilePath(model);
     }
 
+    // If model hasn't been saved yet, _speckleFilePath will still be null - return early
+    if (_speckleFilePath == null)
+    {
+      return;
+    }
+
     FileStream fileStream = new(_speckleFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
     using (var streamWriter = new StreamWriter(fileStream))
@@ -55,6 +61,12 @@ public static class StreamStateManager
     if (_speckleFilePath == null)
     {
       GetOrCreateSpeckleFilePath(model);
+    }
+
+    // If model hasn't been saved yet, _speckleFilePath will still be null - return early
+    if (_speckleFilePath == null)
+    {
+      return;
     }
 
     FileStream fileStream = new(_speckleFilePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
