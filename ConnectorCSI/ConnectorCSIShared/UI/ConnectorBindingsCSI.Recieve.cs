@@ -42,23 +42,73 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
     // Even though we're not using KitManager to load the converter,
     // the deserializer needs KitManager.Types to be populated
     // Otherwise all objects deserialize as plain Base!
-    var kits = KitManager.Kits; // This triggers KitManager.Initialize()
-    SpeckleLog.Logger.Information("🔧 KitManager initialized - {Count} kits loaded", kits.Count());
 
-    // Direct instantiation - no assembly loading, preserves type identity
-    var converter = new Objects.Converter.CSI.ConverterCSI();
-
-    SpeckleLog.Logger.Information("✅ Created ConverterCSI instance for receive");
-    SpeckleLog.Logger.Information("🔍 Converter type: {Type}", converter.GetType().FullName);
-
-    // Force load the Objects assembly to ensure types are available for deserialization
+    // Force load the Objects assembly BEFORE initializing KitManager
     var objectsAssembly = typeof(Objects.Structural.Geometry.Element1D).Assembly;
     SpeckleLog.Logger.Information("🔍 Objects assembly loaded: {Assembly}", objectsAssembly.FullName);
     SpeckleLog.Logger.Information("🔍 Objects assembly location: {Location}", objectsAssembly.Location);
 
-    // Verify types are registered
+    // Manually instantiate ObjectsKit to ensure its types are available
+    var objectsKit = new Objects.ObjectsKit();
+    var objectsKitTypes = objectsKit.Types.ToList();
+    SpeckleLog.Logger.Information("📦 ObjectsKit has {Count} types", objectsKitTypes.Count);
+    SpeckleLog.Logger.Information("   Sample types: {Types}",
+      string.Join(", ", objectsKitTypes.Take(5).Select(t => t.Name)));
+
+    // Now initialize KitManager - it should pick up our loaded Objects assembly
+    var kits = KitManager.Kits; // This triggers KitManager.Initialize()
+    SpeckleLog.Logger.Information("🔧 KitManager initialized - {Count} kits loaded", kits.Count());
+
+    foreach (var kit in kits)
+    {
+      SpeckleLog.Logger.Information("   Kit: {Name} ({TypeCount} types)", kit.Name, kit.Types.Count());
+    }
+
+    // Verify types are registered in KitManager
     var typesCount = KitManager.Types.Count();
     SpeckleLog.Logger.Information("🔍 KitManager has {Count} types registered", typesCount);
+
+    if (typesCount < 100)
+    {
+      SpeckleLog.Logger.Warning("⚠️ KitManager has very few types! Manually injecting ObjectsKit types...");
+
+      // Use reflection to inject types into KitManager's internal list
+      var kitManagerType = typeof(KitManager);
+      var availableTypesField = kitManagerType.GetField("s_availableTypes",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+      if (availableTypesField != null)
+      {
+        var currentTypes = (List<Type>)availableTypesField.GetValue(null);
+        // Add ObjectsKit types if not already present
+        foreach (var type in objectsKitTypes)
+        {
+          if (!currentTypes.Contains(type))
+          {
+            currentTypes.Add(type);
+          }
+        }
+        SpeckleLog.Logger.Information("✅ Manually added {Count} types to KitManager", objectsKitTypes.Count);
+        SpeckleLog.Logger.Information("🔍 KitManager now has {Count} types", KitManager.Types.Count());
+      }
+    }
+
+    // Log first 10 types to verify
+    var registeredTypes = KitManager.Types.Take(10).ToList();
+    SpeckleLog.Logger.Information("📋 First 10 registered types:");
+    foreach (var type in registeredTypes)
+    {
+      SpeckleLog.Logger.Information("   - {Type}", type.FullName);
+    }
+
+    // Check if Element1D is registered (key type for structural elements)
+    var hasElement1D = KitManager.Types.Any(t => t.Name == "Element1D");
+    SpeckleLog.Logger.Information("🔍 Element1D type registered: {Registered}", hasElement1D);
+
+    // Direct instantiation - no assembly loading, preserves type identity
+    var converter = new Objects.Converter.CSI.ConverterCSI();
+    SpeckleLog.Logger.Information("✅ Created ConverterCSI instance for receive");
+    SpeckleLog.Logger.Information("🔍 Converter type: {Type}", converter.GetType().FullName);
 #else
     SpeckleLog.Logger.Information("✅ Using default kit manager for receive");
     var kit = KitManager.GetDefaultKit();
