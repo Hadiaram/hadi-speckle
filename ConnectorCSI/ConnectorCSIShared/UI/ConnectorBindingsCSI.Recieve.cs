@@ -38,6 +38,13 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
 #if ETABS22
     SpeckleLog.Logger.Information("✅ Using direct converter reference for ETABS22 receive");
 
+    // CRITICAL: Initialize KitManager to register types for deserialization
+    // Even though we're not using KitManager to load the converter,
+    // the deserializer needs KitManager.Types to be populated
+    // Otherwise all objects deserialize as plain Base!
+    var kits = KitManager.Kits; // This triggers KitManager.Initialize()
+    SpeckleLog.Logger.Information("🔧 KitManager initialized - {Count} kits loaded", kits.Count());
+
     // Direct instantiation - no assembly loading, preserves type identity
     var converter = new Objects.Converter.CSI.ConverterCSI();
 
@@ -48,6 +55,10 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
     var objectsAssembly = typeof(Objects.Structural.Geometry.Element1D).Assembly;
     SpeckleLog.Logger.Information("🔍 Objects assembly loaded: {Assembly}", objectsAssembly.FullName);
     SpeckleLog.Logger.Information("🔍 Objects assembly location: {Location}", objectsAssembly.Location);
+
+    // Verify types are registered
+    var typesCount = KitManager.Types.Count();
+    SpeckleLog.Logger.Information("🔍 KitManager has {Count} types registered", typesCount);
 #else
     SpeckleLog.Logger.Information("✅ Using default kit manager for receive");
     var kit = KitManager.GetDefaultKit();
@@ -88,7 +99,10 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
 
     //Execute.PostToUIThread(() => state.Progress.Maximum = state.SelectedObjectIds.Count());
 
-    Preview = FlattenCommitObject(commitObject, converter, msg => progress.Report.Log(msg));
+    Preview = FlattenCommitObject(commitObject, converter, msg => {
+      progress.Report.Log(msg);
+      SpeckleLog.Logger.Information(msg);
+    });
     SpeckleLog.Logger.Information("🔍 Objects returned by traversal: {Count}", Preview.Count);
     progress.Report.Log($"🔍 Objects returned by traversal: {Preview.Count}");
     foreach (var previewObj in Preview)
@@ -316,6 +330,7 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
 
     ApplicationObject CreateApplicationObject(Base current)
     {
+      log($"=================\nobject.GetType: {current.GetType()}\nobject.speckle_type: {current.speckle_type}");
       ApplicationObject NewAppObj()
       {
         var speckleType = current
@@ -344,7 +359,7 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
 
       //Handle objects convertable using displayValues
       var fallbackMember = DefaultTraversal
-        .displayValuePropAliases.Where(o => current[o] != null)
+        .DisplayValuePropAliases.Where(o => current[o] != null)
         .Select(o => current[o])
         .FirstOrDefault();
 
@@ -361,7 +376,7 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
       return null;
     }
 
-    var traverseFunction = DefaultTraversal.CreateTraverseFunc(converter);
+    var traverseFunction = DefaultTraversal.CreateTraversalFunc();
 
     var objectsToConvert = traverseFunction
       .Traverse(obj)

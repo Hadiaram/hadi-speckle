@@ -191,6 +191,17 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
           {
             commitObjects.Add(converted);
           }
+
+          // Enhanced diagnostic logging
+          Base convertedBase = converted as Base;
+          if (convertedBase != null)
+          {
+            SpeckleLog.Logger.Information("🔍 Converted object details:");
+            SpeckleLog.Logger.Information("   .NET Type: {Type}", converted.GetType().FullName);
+            SpeckleLog.Logger.Information("   speckle_type: {SpeckleType}", convertedBase.speckle_type);
+            SpeckleLog.Logger.Information("   Type Name: {TypeName}", converted.GetType().Name);
+          }
+
           SpeckleLog.Logger.ForContext<ConnectorBindingsCSI>().Information($"[Send] Added {converted.GetType().Name} to commit: {typeAndName.name}");
           SpeckleLog.Logger.ForContext<ConnectorBindingsCSI>().Information($"📦 Added {converted.GetType().Name} with displayValue? {(converted["displayValue"] != null)}");
         }

@@ -41,6 +41,7 @@ internal static class BaseObjectSerializationUtilities
 
   internal static Type GetAtomicType(string objFullType)
   {
+    SpeckleLog.Logger.Information($"~~~~~~~~~~~~~~~~\n{objFullType}");
     var objectTypes = objFullType.Split(':').Reverse();
     foreach (var typeName in objectTypes)
     {
