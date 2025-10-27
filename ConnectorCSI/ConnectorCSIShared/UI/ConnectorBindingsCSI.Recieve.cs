@@ -351,8 +351,15 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
         return new ApplicationObject(current.id, speckleType) { applicationId = current.applicationId, };
       }
 
+      // 🔍 DIAGNOSTIC LOG: Check what object we're evaluating
+      SpeckleLog.Logger.Information("🔍 [FlattenCommitObject] Evaluating object: speckle_type={SpeckleType}, .NET Type={DotNetType}, ID={Id}",
+        current.speckle_type, current.GetType().FullName, current.id);
+
       //Handle convertable objects
-      if (converter.CanConvertToNative(current))
+      bool canConvert = converter.CanConvertToNative(current);
+      SpeckleLog.Logger.Information("🔍 [FlattenCommitObject] CanConvertToNative returned: {CanConvert}", canConvert);
+
+      if (canConvert)
       {
         var appObj = NewAppObj();
         appObj.Convertible = true;
@@ -365,6 +372,8 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
         StoreObject(current);
         return appObj;
       }
+
+      SpeckleLog.Logger.Warning("⚠️ [FlattenCommitObject] Object NOT convertible, checking fallback");
 
 
 

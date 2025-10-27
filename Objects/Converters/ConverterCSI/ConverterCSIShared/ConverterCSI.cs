@@ -125,6 +125,13 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
   public bool CanConvertToNative(Base @object)
   {
     Log.Information($"👁 Checking object type: {@object.speckle_type}");
+
+    // 🔍 DIAGNOSTIC LOG: Detailed type checking
+    SpeckleLog.Logger.Information("🔍 [CanConvertToNative] Checking: speckle_type={SpeckleType}, .NET Type={DotNetType}, Assembly={Assembly}",
+      @object.speckle_type, @object.GetType().FullName, @object.GetType().Assembly.GetName().Name);
+    SpeckleLog.Logger.Information("🔍 [CanConvertToNative] Type checks: Element1D={E1D}, Element2D={E2D}, Node={Node}, Beam={Beam}",
+      @object is Element1D, @object is Element2D, @object is Node, @object is BuiltElements.Beam);
+
     switch (@object)
     {
       case Element2D elem:
@@ -150,9 +157,11 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
       case BuiltElements.Brace _:
       case BuiltElements.Column _:
       case StructuralMaterial _:
+        SpeckleLog.Logger.Information("🔍 [CanConvertToNative] ✅ Matched a supported type");
         return true;
     }
-    ;
+
+    SpeckleLog.Logger.Warning("🔍 [CanConvertToNative] ❌ No match found, returning false");
     return false;
   }
 
@@ -180,6 +189,10 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
 
   public object ConvertToNative(Base @object)
   {
+    // 🔍 DIAGNOSTIC LOG: Track conversion start
+    SpeckleLog.Logger.Information("🔍 [ConvertToNative] Starting: speckle_type={SpeckleType}, .NET Type={DotNetType}, ID={Id}",
+      @object.speckle_type, @object.GetType().FullName, @object.id);
+
     ApplicationObject appObj = new(@object.id, @object.speckle_type) { applicationId = @object.applicationId };
 
     List<string> convertedNames = new();
@@ -249,8 +262,13 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
         GridLineToNative(o);
         break;
       default:
+        SpeckleLog.Logger.Error("🔍 [ConvertToNative] ❌ Hit default case - unsupported type!");
         throw new ConversionNotSupportedException($"{@object.GetType()} is an unsupported type");
     }
+
+    // 🔍 DIAGNOSTIC LOG: Track switch result
+    SpeckleLog.Logger.Information("🔍 [ConvertToNative] After switch: convertedName={Name}, convertedNames.Count={Count}",
+      convertedName ?? "null", convertedNames.Count);
 
     if (convertedName is not null)
     {
@@ -263,6 +281,10 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
     {
       appObj.Update(createdIds: convertedNames);
     }
+
+    // 🔍 DIAGNOSTIC LOG: Track final result
+    SpeckleLog.Logger.Information("🔍 [ConvertToNative] Completed: Status={Status}, CreatedIds.Count={CreatedCount}, Converted.Count={ConvertedCount}",
+      appObj.Status, appObj.CreatedIds?.Count ?? 0, appObj.Converted?.Count ?? 0);
 
     return appObj;
   }
