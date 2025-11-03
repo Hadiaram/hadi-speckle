@@ -242,7 +242,10 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
     ConcurrentDictionary<string, int> conversionProgressDict
   )
   {
-    var commitObj = new Base();
+    // Use Collection instead of Base to ensure elements are detached properly
+    // This prevents hitting the 25MB object size limit on large models
+    var commitObj = new Collection("CSI Model", "CSI");
+
     // Add model-level info if needed
     var modelObj = converter.ConvertToSpeckle(("Model", "CSI"));
 
@@ -268,7 +271,8 @@ public partial class ConnectorBindingsCSI : ConnectorBindings
     commitObj["@Model"] = modelObj;
 
     // Add converted objects to the commit
-    commitObj["elements"] = objects;
+    // Using Collection.elements ensures [DetachProperty] is applied
+    commitObj.elements = objects.Cast<Base>().ToList();
 
     // Optionally include analysis results
     commitObj["AnalysisResults"] = converter.ConvertToSpeckle(("AnalysisResults", "CSI"));

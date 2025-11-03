@@ -137,7 +137,7 @@ public partial class ConverterCSI : ISpeckleConverter, IFinalizable
       case CSIStories _:
       case Element1D _:
       case Load _:
-      //case Geometry.Line line:
+      case Geometry.Line _:  // Enabled for ETABS22
       case Node _:
       case GridLine _:
       //case Model o:

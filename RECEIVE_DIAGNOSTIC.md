@@ -154,6 +154,40 @@ System.InvalidOperationException: Sequence contains no matching element
 4. Rebuild: `build-etabs22.bat`
 5. Restart ETABS
 
+### Issue: Line Conversion Failures - RESOLVED
+**Root Cause:** LineToNative was missing the required section property parameter in AddByCoord call.
+
+**Symptoms:**
+```
+🔍 LineToNative called:
+   Start: (0, 0, 8.624620826666666) mm
+   End: (3.107, 0, 8.624666666666666) mm
+   Model units: inch
+   Converted start: (0, 0, 0.33955218440794926)
+   Converted end: (0.1223229007, 0, 0.3395539891333333)
+   Frame length: 0.122323 inch
+   API result: success=1, frame=
+```
+
+**Analysis:**
+- Error code 1 = Invalid operation
+- Frame length (0.122 inches) is valid - not too short
+- Coordinates are valid - no NaN or Infinity
+- **Issue**: AddByCoord was called with 7 parameters, but ETABS requires 8 parameters including section property type
+
+**Fix Applied:**
+Changed from:
+```csharp
+Model.FrameObj.AddByCoord(x1, y1, z1, x2, y2, z2, ref newFrame);
+```
+
+To:
+```csharp
+Model.FrameObj.AddByCoord(x1, y1, z1, x2, y2, z2, ref newFrame, "Default");
+```
+
+This matches the pattern used in ConvertFrame.cs (CreateFrame method). ETABS requires a section property to be specified - using "Default" tells ETABS to assign the default frame section property to the new frame.
+
 ## Next Steps
 
 After running receive with the new diagnostics, share the full log output. The enhanced logging will help identify exactly where the process is failing:
@@ -163,5 +197,6 @@ After running receive with the new diagnostics, share the full log output. The e
 3. Is the conversion succeeding?
 4. Are objects being created in the ETABS API?
 5. Is the view refresh working?
+6. **For Line objects**: What error code and coordinates are being logged?
 
 With this information, we can pinpoint the exact issue and apply the right fix.
